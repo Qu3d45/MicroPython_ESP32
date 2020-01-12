@@ -1,13 +1,13 @@
-﻿# https://learn.adafruit.com/micropython-hardware-ssd1306-oled-display/software
+# https://learn.adafruit.com/micropython-hardware-ssd1306-oled-display/software
 import time
 from machine import I2C, Pin
-from .ssd1306 import SSD1306_I2C
+from ssd1306 import SSD1306_I2C
 
 class Display:
 
     def __init__(self,
                  width = 128, height = 64,
-                 scl_pin_id = 15, sda_pin_id = 4,
+                 scl_pin_id = 4, sda_pin_id = 5,
                  freq = 400000):
 
         self.width = width
