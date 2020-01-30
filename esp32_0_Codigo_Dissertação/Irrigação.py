@@ -238,3 +238,10 @@ else:
     discharge = (0.209763317*(water_hight**(5/3))) / \
         ((water_hight + 0.918486862)**(2/3))
     print(discharge, " m3/s")
+
+#####----- RTC -----#####
+
+
+#####----- Thingspeak -----#####
+
+url = "https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, ecValue)

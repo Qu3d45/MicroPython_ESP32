@@ -22,12 +22,12 @@ def switch_day(argument):
 
 
 
-i2c = I2C(sda=Pin(5), scl=Pin(4))
+i2c = I2C(sda=Pin(21), scl=Pin(22))
 ds = DS1307.DS1307(i2c)
 
 ds.DateTime()
 #  datatime format: [Year, month, day, weekday, hour, minute, second]
-#ds.DateTime([2019, 12, 19, 5, 23, 01, 0, 0])
+#ds.DateTime([2020, 1, 30, 5, 21, 09, 00, 0])
 
 
 while True:
