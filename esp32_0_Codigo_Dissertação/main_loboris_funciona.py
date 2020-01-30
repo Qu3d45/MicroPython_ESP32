@@ -105,16 +105,17 @@ print('IP:', gsm.ifconfig()[0])
 
 
 def ReadDS18(ds18_sensor):
-    
+
     temp = ds18_sensor.convert_read()
 #    print("Temperature: {0:.1f}°C".format(temp))
 #    sleep(4)
     return temp
-   
+
 
 def ReadFLOW(trig, echo):
 
     pass
+
 
 def Average(lst):
     # function to get average of a list
@@ -123,34 +124,36 @@ def Average(lst):
 
 def ReadPH(voltage, temp):
     # Calibration of probe
-    # PH4502 with 5V --> pH 4 acidVoltage = 1.432V and pH 7 (pot calibration) neutralVoltage = 2.5V 
+    # PH4502 with 5V --> pH 4 acidVoltage = 1.432V and pH 7 (pot calibration) neutralVoltage = 2.5V
     # with voltage divider --> pH 4 = 0.944V and pH 7 = 1.652V
     acidVoltage = 0.9440
     neutralVoltage = 1.6520
-    
+
     if temp >= 25:
         temp_correction = 0.003 * (temp - 25)
     else:
         temp_correction = -0.003 * (temp - 25)
-    
+
     slope = (7.0 - 4.0) / (- (acidVoltage - neutralVoltage) / 3.0)
     intercept = 7.0 - slope * (neutralVoltage - neutralVoltage) / 3.0
-    phValue  = (slope * (voltage - neutralVoltage) / 3.0 + intercept) + temp_correction
-    
-    round(phValue,2)
+    phValue = (slope * (voltage - neutralVoltage) /
+               3.0 + intercept) + temp_correction
+
+    round(phValue, 2)
     return phValue
 
 
 def ReadTDS(voltage, temp):
     # Temperature compensation to 25 °C reference value
     comp_Coefficente = 1 + 0.02 * (temp - 25)
-    
+
     # compensated electrical conductivity
     comp_Voltage = voltage / comp_Coefficente
-    
+
     # convert voltage value to tds value
-    tds_value = ((133.42 * comp_Voltage**3) - (255.86 * comp_Voltage**2) + (857.39 * comp_Voltage)) * 0.5
-    
+    tds_value = ((133.42 * comp_Voltage**3) - (255.86 *
+                                               comp_Voltage**2) + (857.39 * comp_Voltage)) * 0.5
+
     return tds_value
 
 
@@ -164,7 +167,7 @@ ds18_temp = ReadDS18(ds18_sensor)
 #addr = addrs.pop()
 
 #ds_read = ds18_sensor.convert_temp()
-#sleep_ms(750)
+# sleep_ms(750)
 #ds18_temp = ds18_sensor.read_temp(addr)
 
 print("Temperature: {0:.1f}°C".format(ds18_temp))
@@ -184,7 +187,7 @@ for i in sample_ph:
 avgValue_ph = Average(buf_ph)
 phVoltage = (avgValue_ph / (4095/3.3))
 
-pH_final = round(ReadPH(phVoltage, ds18_temp),1)
+pH_final = round(ReadPH(phVoltage, ds18_temp), 1)
 
 print(pH_final, "ph")
 
@@ -201,12 +204,12 @@ sample_tds = range(5)
 for i in sample_tds:
     buf_tds.append(tds.read())
     sleep(1)
-    
+
 avgValue_tds = Average(buf_tds)
-tdsVoltage = (avgValue_tds * (3.3/4095)) # read the voltage in mV
+tdsVoltage = (avgValue_tds * (3.3/4095))  # read the voltage in mV
 
 tdsValue = round(ReadTDS(tdsVoltage, ds18_temp), 3)
-ecValue = round((tdsValue / 640), 3) # conversion factor ppm to dS/m
+ecValue = round((tdsValue / 640), 3)  # conversion factor ppm to dS/m
 
 
 print(ecValue, " dS/m")
@@ -233,7 +236,7 @@ echo = Pin(2, Pin.IN)
 
 timeout_us = 25000  # no need to wait more then sensor's range limit (4,00 m)
 
-sensor_hight = 150 # cm
+sensor_hight = 150  # cm
 
 trig.value(1)
 sleep_us(10)
@@ -251,15 +254,15 @@ else:
     # Calculate the Speed of Sound in M/S
     sound_comp = 331.4 + (0.606 * temp_dht22) + (0.0124 * hum_dht22)
 #    print(sound_comp, " sound_comp")
-        
-    distance = (duration / 2) * (sound_comp/1000000) # m/us 
+
+    distance = (duration / 2) * (sound_comp/1000000)  # m/us
 #    print(distance, " distance")
-       
-    water_hight = sensor_hight - distance #m
+
+    water_hight = sensor_hight - distance  # m
 #    print(water_hight, " water_hight2")
-        
-       
-    discharge = (0.209763317*(water_hight**(5/3)))/((water_hight + 0.918486862)**(2/3))
+
+    discharge = (0.209763317*(water_hight**(5/3))) / \
+        ((water_hight + 0.918486862)**(2/3))
     print(discharge, " m3/s")
 
 
@@ -268,6 +271,7 @@ else:
 
 #####----- Thingspeak -----#####
 
-url = "https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, ecValue)
+url = "https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(
+    ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, ecValue)
 
 update = urequests.get(url)
