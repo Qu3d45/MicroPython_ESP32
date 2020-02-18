@@ -37,7 +37,7 @@
 # GND   --> GND
 # Speed of Sound = 343 m/s in dry air at 20ºC
 
-from machine import Pin, I2C, time_pulse_us, Onewire, DHT, ADC
+from machine import Pin, I2C, time_pulse_us, Onewire, DHT, ADC, deepsleep
 from time import sleep, sleep_ms, sleep_us
 
 #from onewire import OneWire
@@ -47,6 +47,11 @@ from time import sleep, sleep_ms, sleep_us
 # Channel ID 902540
 # KEY IL9VIMCHEXM9H3W4
 # GET https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1=0
+
+# Channel ID 985682
+# KEY 2IDFEOWYZCNDP7YW
+# GET https://api.thingspeak.com/update?api_key=2IDFEOWYZCNDP7YW&field1=0
+
 
 import socket
 import machine
@@ -58,6 +63,7 @@ import json
 import urequests
 #import wlan
 
+import DS1307
 
 # APN credentials (replace with yours)
 
@@ -156,6 +162,12 @@ def ReadTDS(voltage, temp):
 
     return tds_value
 
+
+#####----- RTC -----#####
+i2c = I2C(sda=Pin(21), scl=Pin(22))
+ds = DS1307.DS1307(i2c)
+
+date_init = ds.DateTime()
 
 #####----- DS18X20 LOBORIS-----#####
 ds18_pin = Onewire(15)
@@ -265,13 +277,22 @@ else:
         ((water_hight + 0.918486862)**(2/3))
     print(discharge, " m3/s")
 
+    date_flow_now = ds.DateTime()
 
-#####----- RTC -----#####
+    total_discharge = (date_flow_now - date_init) * discharge
 
 
 #####----- Thingspeak -----#####
 
-url = "https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(
-    ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, ecValue)
+url_gateway = "https://api.thingspeak.com/update?api_key=IL9VIMCHEXM9H3W4&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(
+    ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, total_discharge)
 
-update = urequests.get(url)
+url_emissor = "https://api.thingspeak.com/update?api_key=2IDFEOWYZCNDP7YW&field1={}&field2={}&field3={}&field4={}&field5={}&field6={}&field7={}".format(
+    ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, total_discharge)
+
+update_gateway = urequests.get(url_gateway)
+update_emissor = urequests.get(url_emissor)
+
+
+# sleep for 5 min (300000 miliseconds)
+deepsleep(300000)
