@@ -34,12 +34,21 @@
 # GND   --> GND
 # Speed of Sound = 343 m/s in dry air at 20ºC
 
-from machine import Pin, I2C, time_pulse_us
-from time import sleep, sleep_ms, sleep_us
+from machine import Pin, I2C, time_pulse_us, ADC, deepsleep
+from time import sleep, sleep_ms, sleep_us, ticks_ms, ticks_diff
 from onewire import OneWire
 from ds18x20 import DS18X20
 
 import dht
+
+
+import config_lora
+from sx127x import SX127x
+from controller_esp32 import ESP32Controller
+
+
+rtc_start = 0
+deepsleep_time = 300000
 
 
 def ReadDS18():
@@ -71,41 +80,6 @@ def ReadDHT22hum(sensor):
     sensor.value(0)
 
     return hum_dht22
-
-
-def ReadFLOW(trig, echo):
-
-    # no need to wait more then sensor's range limit (4,00 m)
-    timeout_us = 25000
-
-    sensor_hight = 1, 50
-
-    trig.value(1)
-    sleep_us(10)
-    trig.value(0)
-
-    duration = time_pulse_us(echo, 1, timeout_us)
-
-    if duration < 0:
-        print("Out of range")
-    else:
-        # To calculate the distance we get the pulse_time and divide it by 2
-        # (the pulse walk the distance twice)
-        # the sound speed on air (343.2 m/s), that It's equivalent to
-        # 0.034320 cm/us that is 1cm each 29.1us
-
-        # Calculate the Speed of Sound in M/S
-        sound_comp = 331.4 + (0.606 * temp_dht22) + (0.0124 * hum_dht22)
-
-        distance = (duration / 2) * 0.000343
-
-        water_hight = sensor_hight - distance
-
-        discharge = (0.209763317*(water_hight**(5/3))) / \
-            ((water_hight + 0.918486862)**(2/3))
-        print(discharge, " m3/s")
-
-    pass
 
 
 def Average(lst):
@@ -146,6 +120,23 @@ def ReadTDS(voltage, temp):
                                                comp_Voltage**2) + (857.39 * comp_Voltage)) * 0.5
 
     return tds_value
+
+
+def send(lora, ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, total_discharge):
+    for i in range(0, 5):
+        payload = '{} {} {} {} {} {} {}'.format(
+            ds18_temp, pH_final, discharge, tdsValue, temp_dht22, hum_dht22, total_discharge)
+
+        # Mensagem a enviar pelo sx127x.py:
+        lora.println(payload)
+
+        sleep(5)
+
+
+#####----- LoRa -----#####
+controller = ESP32Controller()
+lora = controller.add_transceiver(SX127x(
+    name='LoRa'), pin_id_ss=ESP32Controller.PIN_ID_FOR_LORA_SS, pin_id_RxDone=ESP32Controller.PIN_ID_FOR_LORA_DIO0)
 
 
 #####----- DS18X20 -----#####
@@ -239,17 +230,23 @@ else:
     # Calculate the Speed of Sound in M/S
     sound_comp = 331.4 + (0.606 * temp_dht22) + (0.0124 * hum_dht22)
 
-    distance = (duration / 2) * 0.000343
+    distance = (duration / 2) * (sound_comp/10000)
 
     water_hight = sensor_hight - distance
 
-    discharge = (0.209763317*(water_hight**(5/3))) / \
-        ((water_hight + 0.918486862)**(2/3))
+    discharge = (0.21579*(water_hight**(5/3))) / \
+        ((water_hight + 0.47918)**(2/3))
     print(discharge, " m3/s")
 
-    total_discharge = discharge*(300)
+    #####----- RTC -----#####
+    rtc_reading_now = ticks_ms()
+    print(rtc_reading_now)
 
-#####----- RTC -----#####
+    time_diff = ticks_diff(rtc_reading_now, rtc_start)
+    print(time_diff)
+
+    total_discharge = ((time_diff/1000)+deepsleep_time) * discharge
+    print(total_discharge, 'm3')
 
 
 #####----- Thingspeak -----#####
@@ -262,3 +259,12 @@ url_emissor = "https://api.thingspeak.com/update?api_key=2IDFEOWYZCNDP7YW&field1
 
 #update_gateway = urequests.get(url_gateway)
 #update_emissor = urequests.get(url_gateway)
+
+
+#####----- LoRa SEND -----#####
+
+send(lora, ds18_temp, pH_final, discharge, tdsValue,
+     temp_dht22, hum_dht22, total_discharge)
+
+# sleep for 5 min (300000 miliseconds)
+deepsleep(deepsleep_time)
