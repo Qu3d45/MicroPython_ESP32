@@ -75,8 +75,8 @@ while True:
         oled.text(str(water_hight), 0, 10)
         # verifica!
 
-        discharge = (0.209763317*(water_hight**(5/3))) / \
-            ((water_hight + 0.918486862)**(2/3))
+        discharge = (0.21579*(water_hight**(5/3))) / \
+            ((water_hight + 0.47918)**(2/3))
         # print(discharge, " m3/s")
 
         oled.text('m3/s: {}'.format(str(discharge)), 0, 30)
