@@ -19,7 +19,11 @@ from time import sleep, sleep_us, ticks_ms, ticks_diff
 
 import ssd1306
 
-rtc_start = 0
+
+# def str_to_int(lst):
+#     for i in range(0, len(lst)):
+#         lst[i] = int(lst[i])
+#     return lst
 
 
 # 21=SDK/SDA  22=SCK/SCL  As per labeling on ESP32 WROOM
@@ -39,6 +43,15 @@ timeout_us = 25000  # no need to wait more then sensor's range limit (4,00 m)
 sensor_hight = 150  # in centimeters
 
 while True:
+    ticks_start = 0
+
+    # # Read from file
+    # total_discharge_readings = []
+
+    # with open("total_discharge.txt", mode='r') as total_discharge_file:
+    #     for line in total_discharge_readings:
+    #         total_discharge_readings.append(line.lstrip(
+    #             'Last reading of total_discharge: ').rstrip('\n'))
 
     temp_dht22 = 20
     hum_dht22 = 30
@@ -60,14 +73,14 @@ while True:
         sound_comp = (331.4 + (0.606 * temp_dht22) +
                       (0.0124 * hum_dht22))/10000
 
-        #oled.text('Sound cm/us:', 0, 0)
-        #oled.text(str(sound_comp), 0, 10)
+        # oled.text('Sound cm/us:', 0, 0)
+        # oled.text(str(sound_comp), 0, 10)
         # verifica!
 
         distance = (duration / 2) * sound_comp
 
-        #oled.text('distance cm:', 0, 20)
-        #oled.text(str(distance), 0, 30)
+        # oled.text('distance cm:', 0, 20)
+        # oled.text(str(distance), 0, 30)
         # verifica!
 
         water_hight = sensor_hight - distance
@@ -75,22 +88,35 @@ while True:
         oled.text(str(water_hight), 0, 10)
         # verifica!
 
-        discharge = (0.21579*(water_hight**(5/3))) / \
-            ((water_hight + 0.47918)**(2/3))
+        water_hight_m = water_hight/100
+        # Manning-Strickler
+        discharge = (0.21579*(water_hight_m**(5/3))) / \
+            (water_hight_m + 0.47918)**(2/3)
         # print(discharge, " m3/s")
 
         oled.text('m3/s: {}'.format(str(discharge)), 0, 30)
 
-        #####----- RTC -----#####
-        rtc_reading_now = ticks_ms()
+        ####---- Previous Flow readings ----####
+        # mod_t_d_reading = str_to_int(total_discharge_readings)
+
+        #####----- TOTAL FLOW -----#####
+        ticks_reading_now = ticks_ms()
         # print(rtc_reading_now)
 
-        time_diff = ticks_diff(rtc_reading_now, rtc_start)
+        time_diff = ticks_diff(ticks_reading_now, ticks_start)
         # print(time_diff)
 
-        total_discharge = (time_diff/1000) * discharge
+        total_discharge = (time_diff/1000) * discharge * 10
         # print(total_discharge, 'm3')
 
         oled.text('t_d m3: {}'.format(str(total_discharge)), 0, 50)
 
+        # sum_of_readings = sum(mod_t_d_reading) + total_discharge
+
+        # with open("total_discharge.txt", mode='a') as file:
+        #     file.write('Last reading of total_discharge: {} \n'.format(
+        #         str(sum_of_readings)))
+
         oled.show()
+
+    sleep(10)

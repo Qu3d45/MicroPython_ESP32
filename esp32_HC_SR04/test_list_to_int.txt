@@ -1,0 +1,10 @@
+Last reading of total_discharge: 0 
+Last reading of total_discharge: 1 
+Last reading of total_discharge: 2 
+Last reading of total_discharge: 3 
+Last reading of total_discharge: 4 
+Last reading of total_discharge: 5 
+Last reading of total_discharge: 6 
+Last reading of total_discharge: 7 
+Last reading of total_discharge: 8 
+Last reading of total_discharge: 9 

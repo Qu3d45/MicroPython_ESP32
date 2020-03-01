@@ -19,7 +19,29 @@ from time import sleep, sleep_us, ticks_ms, ticks_diff
 
 import ssd1306
 
+
+def Sum(lst):
+    # function to get sum of a list
+    return sum(lst)
+
+
+def Conv_str_to_int(lst):
+    for i in range(0, len(lst)):
+        lst[i] = int(lst[i])
+    return lst
+
+
+# Read from file
+total_discharge_readings = []
+
+with open("total_discharge.txt", mode='r') as total_discharge_file:
+    for line in total_discharge_readings:
+        total_discharge_readings.append(line.lstrip(
+            'Last reading of total_discharge: ').rstrip('\n'))
+
+
 rtc_start = 0
+# sleep for 5 min (300000 miliseconds)
 deepsleep_time = 10000  # 10 seconds
 
 
@@ -63,27 +85,35 @@ else:
     # 0.034320 cm/us that is 1cm each 29.1us
 
     # Calculate the Speed of Sound in m/s
+
     oled.fill(0)
 
-    sound_comp = (331.4 + (0.606 * temp_dht22) + (0.0124 * hum_dht22))/10000
+    sound_comp = (331.4 + (0.606 * temp_dht22) +
+                  (0.0124 * hum_dht22))/10000
 
-    oled.text('Sound cm/us:', 0, 0)
-    oled.text(str(sound_comp), 0, 10)
+    # oled.text('Sound cm/us:', 0, 0)
+    # oled.text(str(sound_comp), 0, 10)
     # verifica!
 
     distance = (duration / 2) * sound_comp
 
-    oled.text('distance cm:', 0, 20)
-    oled.text(str(distance), 0, 30)
+    # oled.text('distance cm:', 0, 20)
+    # oled.text(str(distance), 0, 30)
     # verifica!
 
     water_hight = sensor_hight - distance
+    # oled.text('water_hight cm:', 0, 0)
+    # oled.text(str(water_hight), 0, 10)
+    # verifica!
 
-    discharge = (0.21579*(water_hight**(5/3))) / \
-        ((water_hight + 0.47918)**(2/3))
+    water_hight_m = water_hight/100
+
+    # Manning-Strickler
+    discharge = (0.21579*(water_hight_m**(5/3))) / \
+        (water_hight_m + 0.47918)**(2/3)
     # print(discharge, " m3/s")
 
-    oled.text('m3/s: {}'.format(str(discharge)), 0, 40)
+    oled.text('m3/s: {}'.format(str(discharge)), 0, 20)
 
     #####----- RTC -----#####
     rtc_reading_now = ticks_ms()
@@ -92,13 +122,25 @@ else:
     time_diff = ticks_diff(rtc_reading_now, rtc_start)
     # print(time_diff)
 
-    total_discharge = ((time_diff/1000)+deepsleep_time) * discharge
+    total_discharge = (time_diff/1000) * discharge
     # print(total_discharge, 'm3')
 
-    oled.text('t_d m3: {}'.format(str(total_discharge)), 0, 50)
+    # Wirte to file
+    # 'w' = write --> new file
+    # 'a' = append
+    # when "with" is used, no need to close the file
+    with open("total_discharge.txt", mode='a') as file:
+        file.write(
+            'Last reading of total_discharge: {} \n'.format(total_discharge))
+
+    oled.text('t_d m3: {}'.format(str(total_discharge)), 0, 30)
+
+    conv_total_discharge_readings = Conv_str_to_int(total_discharge_readings)
+
+    sum_total_discharge = Sum(conv_total_discharge_readings)
+
+    oled.text('acum_t_d m3: {}'.format(str(sum_total_discharge)), 0, 50)
 
     oled.show()
 
-
-# sleep for 5 min (300000 miliseconds)
 deepsleep(deepsleep_time)
