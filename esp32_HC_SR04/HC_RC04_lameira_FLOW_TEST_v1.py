@@ -1,4 +1,4 @@
-# Manuel Lameira
+﻿# Manuel Lameira
 # Board: ESP32 - WROOM or WROVER
 
 # This is a micropython convertion for the code provided by https://dronebotworkshop.com for the arduino platform.
@@ -14,18 +14,17 @@
 
 # Speed of Sound = 343 m/s in dry air at 20ºC
 
+
+################## TODO: Implementar um wakeup por botão quando esta em deepsleep, evita a tentativa erro de acordar o MCU  ##################
+
+
 from machine import Pin, time_pulse_us, I2C, deepsleep
 from time import sleep, sleep_us, ticks_ms, ticks_diff
 
 import ssd1306
 
 
-def Sum(lst):
-    # function to get sum of a list
-    return sum(lst)
-
-
-def Conv_str_to_int(lst):
+def str_to_int(lst):
     for i in range(0, len(lst)):
         lst[i] = int(lst[i])
     return lst
@@ -44,6 +43,7 @@ rtc_start = 0
 # sleep for 5 min (300000 miliseconds)
 deepsleep_time = 10000  # 10 seconds
 
+button = Pin(4, Pin.IN)
 
 # ESP32 Pin assignment
 # 21=SDK/SDA  22=SCK/SCL  As per labeling on ESP32 WROOM
@@ -135,12 +135,17 @@ else:
 
     oled.text('t_d m3: {}'.format(str(total_discharge)), 0, 30)
 
-    conv_total_discharge_readings = Conv_str_to_int(total_discharge_readings)
+    conv_total_discharge_readings = str_to_int(total_discharge_readings)
 
-    sum_total_discharge = Sum(conv_total_discharge_readings)
+    sum_total_discharge = sum(conv_total_discharge_readings) + total_discharge
 
     oled.text('acum_t_d m3: {}'.format(str(sum_total_discharge)), 0, 50)
 
     oled.show()
 
-deepsleep(deepsleep_time)
+if button == True:
+    oled.fill(0)
+    oled.text('Waiting for resart', 0, 30)
+    sleep(15)
+else:
+    deepsleep(deepsleep_time)
